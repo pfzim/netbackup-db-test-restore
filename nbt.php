@@ -208,7 +208,7 @@ if(!file_exists('inc.config.php'))
 
 			header("Content-Type: text/html; charset=utf-8");
 
-			$db->select_assoc_ex($images, rpv("SELECT m.`id`, m.`date`, m.`db`, j1.`policy_name`, j1.`sched_label`, j1.`client_name`, m.`flags` FROM @files AS m LEFT JOIN @images AS j1 ON j1.`id` = m.`pid`"));
+			$db->select_assoc_ex($images, rpv("SELECT m.`id`, FROM_UNIXTIME(m.`backup_time`) AS `date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`flags` FROM @images AS m"));
 			include('templ/tpl.main.php');
 		}
 		exit;

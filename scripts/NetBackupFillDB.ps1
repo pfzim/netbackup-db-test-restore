@@ -50,6 +50,8 @@ foreach($j in $json)
     $db = ""
 	$stripes = 0
 	$data_found = $false
+	$mdf_found = $false
+	$log_found = $false
 	
 	foreach($f in $image.fentries)
 	{
@@ -57,18 +59,24 @@ foreach($j in $json)
 
 		if($data[3] -eq 'db' -and ($data[7].Substring(0, 5) -eq '001of'))
 		{
-			if(!$data_found -and $f.data -match "MSSQL_METADATA_FILES\s+([^\s]+)$")
+			if(!$data_found)
 			{
 				$data_found = $true
-				$mdf = $matches[1]
                 $date = $data[8]
                 $db = $data[4]
 				$stripes = [int] $data[7].Substring(5, 3)
 				$nbimage = $f.path.Substring(1, $f.path.Length - 1)
 			}
-			elseif($f.data -match "MSSQL_METADATA_LOGFILE\s+([^\s]+)$")
+			
+			if($f.data -match "MSSQL_METADATA_FILES\s+([^\s].*)$")
+			{
+				$mdf = $matches[1]
+				$mdf_found = $true
+			}
+			elseif($f.data -match "MSSQL_METADATA_LOGFILE\s+([^\s].*)$")
 			{
 				$logs += $matches[1]
+				$log_found = $true
 			}
         }
     }
@@ -88,7 +96,17 @@ foreach($j in $json)
 			}
 			else
 			{
-				Write-Host -ForegroundColor Red ("SKIPPED existing backup {1} : {0}" -f $nbimage, $j.backupid)
+				Write-Host -ForegroundColor Yellow ("SKIPPED existing backup {1} : {0}" -f $nbimage, $j.backupid)
+			}
+
+			if(!$mdf_found)
+			{
+				Write-Host -ForegroundColor Yellow ("WARNING no mdf name found for ID: {0}" -f $j.backupid)
+			}
+
+			if(!$log_found)
+			{
+				Write-Host -ForegroundColor Yellow ("WARNING no log name found for ID: {0}" -f $j.backupid)
 			}
 		}
 		catch
