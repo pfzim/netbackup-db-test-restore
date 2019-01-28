@@ -33,10 +33,12 @@ foreach($j in $json)
 
     try
     {
-        #$date = (((Get-Date "1970-01-01 00:00:00.000Z") + ([TimeSpan]::FromSeconds($j.backup_time)))).ToString("MM/dd/yyyy HH:mm")
-        #$images = (& 'C:\Program Files\Veritas\NetBackup\bin\bplist.exe' -s $date -e $date -C $j.client_name -k $j.policy_name -t 15 -R \) | Sort-Object -Unique
+		<# json version
         $image_data = (& 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpflist.exe' -rl 1 -backupid $j.backupid -json)
         $image = $image_data | ConvertFrom-Json
+		<##>
+		
+        $images = (& 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpflist.exe' -rl 1 -backupid $j.backupid)
     }
     catch
     {
@@ -53,6 +55,7 @@ foreach($j in $json)
 	$mdf_found = $false
 	$log_found = $false
 	
+	<# json version
 	foreach($f in $image.fentries)
 	{
 		$data = $f.path.Substring(1, $f.path.Length - 1) -split '\.'
@@ -80,7 +83,41 @@ foreach($j in $json)
 			}
         }
     }
+	<##>
 	
+	foreach($image in $images)
+	{
+		
+		if($image -match "\s/(.+\.\.C)\s")
+		{
+			$path = $matches[1]
+			$data = $path.Substring(1, $path.Length - 1) -split '\.'
+
+			if($data[3] -eq 'db' -and ($data[7].Substring(0, 5) -eq '001of'))
+			{
+				if(!$data_found)
+				{
+					$data_found = $true
+					$date = $data[8]
+					$db = $data[4]
+					$stripes = [int] $data[7].Substring(5, 3)
+					$nbimage = $path
+				}
+				
+				if($image -match "MSSQL_METADATA_FILES\s+([^\s].*)$")
+				{
+					$mdf = $matches[1]
+					$mdf_found = $true
+				}
+				elseif($image -match "MSSQL_METADATA_LOGFILE\s+([^\s].*)$")
+				{
+					$logs += $matches[1]
+					$log_found = $true
+				}
+			}
+		}
+    }
+
 	if($data_found)
 	{
 		try
