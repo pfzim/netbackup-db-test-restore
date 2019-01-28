@@ -106,6 +106,97 @@ function f_http(url, _f_callback, _callback_params, content_type, data)
 	return true;
 }
 
+function f_unmark(ev)
+{
+	var el_src = ev.target || ev.srcElement;
+	var id = el_src.parentNode.parentNode.parentNode.getAttribute('data-id');
+	f_http("nbt.php?"+json2url({'action': 'unmark', 'id': id }),
+		function(data, el)
+		{
+			f_notify(data.message, data.code?"error":"success");
+			if(!data.code)
+			{
+				//gi('menu-cmd-unmark').style.display = 'none';
+				gi('menu-cmd-mark').style.display = 'block';
+			}
+		},
+		el_src
+	);
+};
+
+function f_mark(ev)
+{
+	var el_src = ev.target || ev.srcElement;
+	var id = el_src.parentNode.parentNode.parentNode.getAttribute('data-id');
+	f_http("nbt.php?"+json2url({'action': 'mark', 'id': id }),
+		function(data, el)
+		{
+			f_notify(data.message, data.code?"error":"success");
+			if(!data.code)
+			{
+				gi('menu-cmd-unmark').style.display = 'block';
+				//gi('menu-cmd-mark').style.display = 'none';
+			}
+		},
+		el_src
+	);
+};
+
+function f_menu(ev)
+{
+	var id = 0;
+	var el_src;
+	if(ev)
+	{
+		el_src = ev.target || ev.srcElement;
+		id = el_src.parentNode.parentNode.getAttribute('data-id');
+		f_menu_id(ev, el_src, id);
+	}
+}
+
+function f_menu_id(ev, el_src, id)
+{
+	if(id)
+	{
+		var el = gi('contact-menu');
+		var pX = ev.pageX || (ev.clientX + (document.documentElement && document.documentElement.scrollLeft || document.body && document.body.scrollLeft || 0) - (document.documentElement.clientLeft || 0));
+		var pY = ev.pageY || (ev.clientY + (document.documentElement && document.documentElement.scrollTop || document.body && document.body.scrollTop || 0) - (document.documentElement.clientTop || 0));
+		pX = Math.round(pX-190);
+		pY = Math.round(pY+5);
+		if(pX < 0) pX = 0;
+		if(pY < 0) pY = 0;
+		el.style.left = pX  + "px";
+		el.style.top = pY + "px";
+		el.setAttribute('data-id', id);
+		gi('menu-cmd-mark').style.display = 'block';
+		gi('menu-cmd-unmark').style.display = 'block';
+		//gi('menu-loading').style.display = 'block';
+		el.style.display = 'block';
+		parentElement = el_src;
+		document.addEventListener('click', documentClick, false);
+	}
+}
+
+var parentElement;
+
+documentClick = function (event) {
+	var parent;
+	var wrapperElement = gi('contact-menu');
+	if (event.target !== parentElement && event.target !== wrapperElement) {
+		parent = event.target.parentNode;
+		  while (parent !== wrapperElement && parent !== parentElement) {
+			  parent = parent.parentNode;
+			  if (parent === null) {
+				wrapperElement.style.display = 'none';
+				//wrapperElement.parentNode.removeChild(wrapperElement);
+				document.removeEventListener('click', documentClick, false);
+				wrapperElement = null;
+				  break;
+			  }
+		}
+	}
+};
+
 function f_delete(ev, action)
 {
 	gi('loading').style.display = 'block';

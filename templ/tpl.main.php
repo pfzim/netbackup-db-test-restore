@@ -24,7 +24,12 @@
 				<td><?php eh($row['policy_name']); ?></td>
 				<td><?php eh($row['sched_label']); ?></td>
 				<td><?php eh($row['client_name']); ?></td>
-				<td><?php eh($row['flags']); ?></td>
+				<td><?php echo bit_to_string($g_flag_html, $row['flags']); ?></td>
+				<?php if($uid) { ?>
+				<td>
+					<span class="command" onclick="f_menu(event);">Menu</span>
+				</td>
+				<?php } ?>
 			</tr>
 		<?php } ?>
 			</tbody>
@@ -33,6 +38,5 @@
 </div>
 		<br />
 		<br />
-<?php
-	include("tpl.footer.php");
-?>
+<?php include("tpl.menu-nbt.php"); ?>
+<?php include("tpl.footer.php"); ?>

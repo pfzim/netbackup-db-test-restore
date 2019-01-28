@@ -25,6 +25,22 @@ if(!file_exists('inc.config.php'))
 
 	require_once("inc.config.php");
 
+$g_flag_names = array("WAIT FOR TEST;", "OK;", "FAILED CHECKDB;", "FAILED RESTORE;");
+$g_flag_html = array('<span class="warn">WAIT FOR TEST</span>', '<span class="pass">OK</span>', '<span class="error">FAILED CHECKDB</span>', '<span class="error">FAILED RESTORE</span>');
+
+function bit_to_string($flag_names, $flag)
+{
+	$result = "";
+	for($i = 0; $i < count($flag_names); $i++)
+	{
+		if(($flag >> $i) & 0x01)
+		{
+			$result .= $flag_names[$i];
+		}
+	}
+	return $result;
+}
+
 	session_name("ZID");
 	session_start();
 	error_reporting(E_ALL);
@@ -192,6 +208,36 @@ if(!file_exists('inc.config.php'))
 			setcookie("zl", NULL, time()-60, '/');
 			
 			header('Location: '.$self);
+		}
+		exit;
+
+		case 'unmark':
+		{
+			header("Content-Type: text/plain; charset=utf-8");
+			if(!$uid)
+			{
+				echo '{"code": 1, "message": "Please, log in"}';
+				exit;
+			}
+
+			$db->put(rpv("UPDATE `@images` SET `flags` = 0x00 WHERE `id` = # LIMIT 1", $id));
+
+			echo '{"code": 0, "message": "Successful hide (ID '.$id.')"}';
+		}
+		exit;
+
+		case 'mark':
+		{
+			header("Content-Type: text/plain; charset=utf-8");
+			if(!$uid)
+			{
+				echo '{"code": 1, "message": "Please, log in"}';
+				exit;
+			}
+
+			$db->put(rpv("UPDATE `@images` SET `flags` = 0x01 WHERE `id` = # LIMIT 1", $id));
+
+			echo '{"code": 0, "message": "Successful show (ID '.$id.')"}';
 		}
 		exit;
 
