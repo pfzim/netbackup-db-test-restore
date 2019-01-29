@@ -244,6 +244,16 @@ foreach($row in $dataTable)
 	Write-Host -ForegroundColor Green (" result: " + $proc.ExitCode)
 	if($proc.HasExited -and $proc.ExitCode -eq 0)
 	{
+		$dbsize = 0
+		try
+		{
+			$result = Invoke-SQL -dataSource $server -sqlCommand "SELECT SUM(size) * 8. AS bytes FROM sys.master_files WHERE DB_NAME(database_id) = 'NB_Test_Restore'"
+			$dbsize = $result[0].bytes
+		}
+		catch
+		{
+		}
+
 		Log-Only "info" "  Checking DB..."
 		Write-Host -NoNewline "  Checking DB..."
 
@@ -268,7 +278,7 @@ foreach($row in $dataTable)
 
 		if($status -eq 0)
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `flags` = (`flags` & ~0x10) | 0x02 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
+			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = (`flags` & ~0x10) | 0x02 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="pass">PASSED</td></tr>'
 			Log-Only "info" "  Check DB - OK"
@@ -276,7 +286,7 @@ foreach($row in $dataTable)
 		}
 		else
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `flags` = (`flags` & ~0x10) | 0x04 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
+			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = (`flags` & ~0x10) | 0x04 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="error">CHECKDB FAILED</td></tr>'
 			Log-Only "info" "  Check DB - FAILED"
