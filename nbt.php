@@ -25,8 +25,8 @@ if(!file_exists('inc.config.php'))
 
 	require_once("inc.config.php");
 
-$g_flag_names = array("WAIT FOR TEST;", "OK;", "FAILED CHECKDB;", "FAILED RESTORE;");
-$g_flag_html = array('<span class="warn">WAIT FOR TEST</span>', '<span class="pass">OK</span>', '<span class="error">FAILED CHECKDB</span>', '<span class="error">FAILED RESTORE</span>');
+$g_flag_names = array("WAIT FOR TEST;", "OK;", "CHECKDB FAILED;", "RESTORE FAILED;", "TESTING IN PROGRESS;", "NOT FOUND;");
+$g_flag_html = array('<span class="warn">WAIT FOR TEST</span>', '<span class="pass">OK</span>', '<span class="error">CHECKDB FAILED</span>', '<span class="error">RESTORE FAILED</span>', '<span class="warn">TESTING IN PROGRESS</span>', '<span class="error">NOT FOUND</span>');
 
 function bit_to_string($flag_names, $flag)
 {
@@ -241,6 +241,24 @@ function bit_to_string($flag_names, $flag)
 		}
 		exit;
 
+		case 'all':
+		{
+			/*
+			if(!$user_perm->check_permission($id, LPD_ACCESS_READ))
+			{
+				$error_msg = "Access denied to section ".$id." for user ".$uid."!";
+				include('templ/tpl.message.php');
+				exit;
+			}
+			*/
+
+			header("Content-Type: text/html; charset=utf-8");
+
+			$db->select_assoc_ex($images, rpv("SELECT m.`id`, FROM_UNIXTIME(m.`backup_time`) AS `date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`flags` FROM @images AS m"));
+			include('templ/tpl.main.php');
+		}
+		exit;
+
 		case '':
 		{
 			/*
@@ -254,7 +272,7 @@ function bit_to_string($flag_names, $flag)
 
 			header("Content-Type: text/html; charset=utf-8");
 
-			$db->select_assoc_ex($images, rpv("SELECT m.`id`, FROM_UNIXTIME(m.`backup_time`) AS `date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`flags` FROM @images AS m"));
+			$db->select_assoc_ex($images, rpv("SELECT m.`id`, FROM_UNIXTIME(m.`backup_time`) AS `date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`flags` FROM @images AS m WHERE m.`flags` & 0xFFFFFFDF"));
 			include('templ/tpl.main.php');
 		}
 		exit;

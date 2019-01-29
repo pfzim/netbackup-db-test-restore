@@ -590,6 +590,7 @@ body {
 .warn {
     background-color: yellow;
     color: black;
+    margin: 2px 5px;
     padding: 2px 5px;
 	border-radius: 4px;
     font-weight: bold;
@@ -598,6 +599,7 @@ body {
 .error {
     background-color: red;
     color: white;
+    margin: 2px 5px;
     padding: 2px 5px;
 	border-radius: 4px;
     font-weight: bold;
@@ -606,6 +608,7 @@ body {
 .pass {
     background-color: green;
     color: white;
+    margin: 2px 5px;
     padding: 2px 5px;
 	border-radius: 4px;
     font-weight: bold;

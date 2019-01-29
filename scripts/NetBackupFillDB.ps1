@@ -1,3 +1,5 @@
+$ErrorActionPreference = "Stop"
+
 Clear-Host
 
 $sd = (Get-Date).AddDays(-365).ToString("MM/dd/yyyy HH:mm")
@@ -15,6 +17,10 @@ $conn.ConnectionString= "DSN=web.bristolcapital.ru;"
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
+$cmd.CommandText = 'UPDATE nbt_images SET `flags` = `flags` | 0x20'
+$cmd.CommandText
+$cmd.ExecuteNonQuery() | Out-Null
+
 $last_id = 0
 
 foreach($j in $json)
@@ -30,6 +36,7 @@ foreach($j in $json)
     }
     
     $media_list = $media_list | Sort-Object
+
 
     try
     {
@@ -85,6 +92,7 @@ foreach($j in $json)
     }
 	<##>
 	
+    #<# plain text
 	foreach($image in $images)
 	{
 		
@@ -117,33 +125,35 @@ foreach($j in $json)
 			}
 		}
     }
+    <##>
 
 	if($data_found)
 	{
 		try
 		{
-			$cmd.CommandText = 'SELECT COUNT(*) FROM nbt_images AS m WHERE m.`backupid` = "{0}" OR m.`nbimage` = "{1}"' -f $j.backupid, $nbimage
+			$cmd.CommandText = 'SELECT COUNT(*) FROM nbt_images AS m WHERE m.`backupid` = "{0}"' -f $j.backupid
 			$exist = [int] $cmd.ExecuteScalar()
 			if($exist -eq 0)
 			{
 				$cmd.CommandText = 'INSERT INTO nbt_images (`policy_name`, `sched_label`, `client_name`, `backup_time`, `expiration`, `backupid`, `ss_name`, `media_list`, `nbimage`, `date2`, `db`, `stripes`, `mdf`, `logs`) VALUES ("{0}", "{1}", "{2}", "{3}", "{4}", "{5}", "{6}", "{7}", "{8}", "{9}", "{10}", "{11}", "{12}", "{13}")' -f $j.policy_name, $j.sched_label, $j.client_name, $j.backup_time, $j.expiration, $j.backupid, $j.ss_name, ($media_list -join ","), $nbimage, $date, $db, $stripes, $mdf, ($logs -join ",")
-				$cmd.CommandText
-				#$cmd = new-object System.Data.Odbc.OdbcCommand($query,$conn)
-				$cmd.ExecuteNonQuery() | Out-Null
 			}
 			else
 			{
-				Write-Host -ForegroundColor Yellow ("SKIPPED existing backup {1} : {0}" -f $nbimage, $j.backupid)
+				$cmd.CommandText = 'UPDATE nbt_images SET `policy_name` = "{0}", `sched_label` = "{1}", `client_name` = "{2}", `backup_time` = "{3}", `expiration` = "{4}", `ss_name` = "{5}", `media_list` = "{6}", `nbimage` = "{7}", `date2` = "{8}", `db` = "{9}", `stripes` = "{10}", `mdf` = "{11}", `logs` = "{12}", `flags` = `flags` & ~0x20 WHERE `backupid` = "{13}"' -f $j.policy_name, $j.sched_label, $j.client_name, $j.backup_time, $j.expiration, $j.ss_name, ($media_list -join ","), $nbimage, $date, $db, $stripes, $mdf, ($logs -join ","), $j.backupid
 			}
+			
+			$cmd.CommandText
+			#$cmd = new-object System.Data.Odbc.OdbcCommand($query,$conn)
+			$cmd.ExecuteNonQuery() | Out-Null
 
 			if(!$mdf_found)
 			{
-				Write-Host -ForegroundColor Yellow ("WARNING no mdf name found for ID: {0}" -f $j.backupid)
+				Write-Host -ForegroundColor Yellow ("  WARNING no mdf name found for ID: {0}" -f $j.backupid)
 			}
 
 			if(!$log_found)
 			{
-				Write-Host -ForegroundColor Yellow ("WARNING no log name found for ID: {0}" -f $j.backupid)
+				Write-Host -ForegroundColor Yellow ("  WARNING no log name found for ID: {0}" -f $j.backupid)
 			}
 		}
 		catch

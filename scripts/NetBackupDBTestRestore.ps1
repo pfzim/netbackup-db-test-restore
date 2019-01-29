@@ -1,8 +1,10 @@
 # Flags
 # 0x01 = WAIT FOR TEST
 # 0x02 = TESTED OK
-# 0x03 = FAILED CHECKDB
-# 0x04 = FAILED RESTORE
+# 0x04 = FAILED CHECKDB
+# 0x08 = FAILED RESTORE
+# 0x10 = TESTING IN PROGRESS
+# 0x20 = NOT FOUND
 
 $smtp_from = "orchestrator@bristolcapital.ru"
 $smtp_to = "admin@bristolcapital.ru"
@@ -209,7 +211,7 @@ foreach($row in $dataTable)
 	Log-Screen "info" ("  Media required: " + $row.media_list)
 	Log-Screen "info" ("  MDF: " + $row.mdf + ", LOGS: " + $row.logs + ", Stripes: " + $row.stripes)
 
-	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = `flags` ^ 0x01 WHERE id = {0}' -f $row.id
+	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE id = {0}' -f $row.id
 	$cmd.ExecuteNonQuery() | Out-Null
 
 	# create move script
@@ -266,7 +268,7 @@ foreach($row in $dataTable)
 
 		if($status -eq 0)
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `flags` = `flags` | 0x02 WHERE id = {0}' -f $row.id
+			$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x10) | 0x02 WHERE id = {0}' -f $row.id
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="pass">PASSED</td></tr>'
 			Log-Only "info" "  Check DB - OK"
@@ -274,7 +276,7 @@ foreach($row in $dataTable)
 		}
 		else
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `flags` = `flags` | 0x04 WHERE id = {0}' -f $row.id
+			$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x10) | 0x04 WHERE id = {0}' -f $row.id
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="error">CHECKDB FAILED</td></tr>'
 			Log-Only "info" "  Check DB - FAILED"
@@ -283,7 +285,7 @@ foreach($row in $dataTable)
 	}
 	else
 	{
-		$cmd.CommandText = 'UPDATE nbt_images SET `flags` = `flags` | 0x08 WHERE id = {0}' -f $row.id
+		$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x10) | 0x08 WHERE id = {0}' -f $row.id
 		$cmd.ExecuteNonQuery() | Out-Null
 		$body += '<td class="error">RESTORE FAILED</td></tr>'
 	}

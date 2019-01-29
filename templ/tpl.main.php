@@ -8,12 +8,13 @@
 		<table id="table" class="main-table" width="100%">
 			<thead>
 			<tr>
-				<th width="15%">Date</th>
-				<th width="15%">DB</th>
-				<th width="15%">Policy</th>
-				<th width="15%">Schedule</th>
-				<th width="15%">Client</th>
-				<th width="15%">Status</th>
+				<th width="14%">Date</th>
+				<th width="16%">DB</th>
+				<th width="14%">Policy</th>
+				<th width="14%">Schedule</th>
+				<th width="14%">Client</th>
+				<th width="14%">Media</th>
+				<th width="14%">Status</th>
 			</tr>
 			</thead>
 			<tbody id="table-data">
@@ -24,6 +25,7 @@
 				<td><?php eh($row['policy_name']); ?></td>
 				<td><?php eh($row['sched_label']); ?></td>
 				<td><?php eh($row['client_name']); ?></td>
+				<td><?php eh($row['media_list']); ?></td>
 				<td><?php echo bit_to_string($g_flag_html, $row['flags']); ?></td>
 				<?php if($uid) { ?>
 				<td>
