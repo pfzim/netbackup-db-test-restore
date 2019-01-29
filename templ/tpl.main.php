@@ -26,7 +26,7 @@
 				<td><?php eh($row['sched_label']); ?></td>
 				<td><?php eh($row['client_name']); ?></td>
 				<td><?php eh($row['media_list']); ?></td>
-				<td><?php echo bit_to_string($g_flag_html, $row['flags']); ?></td>
+				<td><?php echo implode(bits_to_array($g_flag_html, $row['flags'])); ?></td>
 				<?php if($uid) { ?>
 				<td>
 					<span class="command" onclick="f_menu(event);">Menu</span>

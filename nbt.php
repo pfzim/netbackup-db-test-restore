@@ -25,17 +25,17 @@ if(!file_exists('inc.config.php'))
 
 	require_once("inc.config.php");
 
-$g_flag_names = array("WAIT FOR TEST;", "OK;", "CHECKDB FAILED;", "RESTORE FAILED;", "TESTING IN PROGRESS;", "NOT FOUND;");
-$g_flag_html = array('<span class="warn">WAIT FOR TEST</span>', '<span class="pass">OK</span>', '<span class="error">CHECKDB FAILED</span>', '<span class="error">RESTORE FAILED</span>', '<span class="warn">TESTING IN PROGRESS</span>', '<span class="error">NOT FOUND</span>');
+$g_flag_names = array("WAITING FOR TEST", "OK", "CHECKDB FAILED", "RESTORE FAILED", "TESTING IN PROGRESS", "NOT FOUND");
+$g_flag_html = array('<span class="warn">WAITING FOR TEST</span>', '<span class="pass">OK</span>', '<span class="error">CHECKDB FAILED</span>', '<span class="error">RESTORE FAILED</span>', '<span class="warn">TESTING IN PROGRESS</span>', '<span class="error">NOT FOUND</span>');
 
-function bit_to_string($flag_names, $flag)
+function bits_to_array($flag_names, $flag)
 {
-	$result = "";
+	$result = array();
 	for($i = 0; $i < count($flag_names); $i++)
 	{
 		if(($flag >> $i) & 0x01)
 		{
-			$result .= $flag_names[$i];
+			$result[] = &$flag_names[$i];
 		}
 	}
 	return $result;
@@ -220,9 +220,9 @@ function bit_to_string($flag_names, $flag)
 				exit;
 			}
 
-			$db->put(rpv("UPDATE `@images` SET `flags` = 0x00 WHERE `id` = # LIMIT 1", $id));
+			$db->put(rpv("UPDATE `@images` SET `flags` = `flags` & 0xFFFFFFFE WHERE `id` = # LIMIT 1", $id));
 
-			echo '{"code": 0, "message": "Successful hide (ID '.$id.')"}';
+			echo '{"code": 0, "message": "Operation successful (ID '.$id.')"}';
 		}
 		exit;
 
@@ -235,9 +235,9 @@ function bit_to_string($flag_names, $flag)
 				exit;
 			}
 
-			$db->put(rpv("UPDATE `@images` SET `flags` = 0x01 WHERE `id` = # LIMIT 1", $id));
+			$db->put(rpv("UPDATE `@images` SET `flags` = `flags` | 0x01 WHERE `id` = # LIMIT 1", $id));
 
-			echo '{"code": 0, "message": "Successful show (ID '.$id.')"}';
+			echo '{"code": 0, "message": "Operation successful (ID '.$id.')"}';
 		}
 		exit;
 

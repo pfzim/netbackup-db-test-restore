@@ -1,3 +1,5 @@
+# Fill the MySQL DB from NetBackup
+
 $ErrorActionPreference = "Stop"
 
 Clear-Host
@@ -109,7 +111,7 @@ foreach($j in $json)
 					$date = $data[8]
 					$db = $data[4]
 					$stripes = [int] $data[7].Substring(5, 3)
-					$nbimage = $path
+					$nbimage = $path -replace "\\", "\\"
 				}
 				
 				if($image -match "MSSQL_METADATA_FILES\s+([^\s].*)$")

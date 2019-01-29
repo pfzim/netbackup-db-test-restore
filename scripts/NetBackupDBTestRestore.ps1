@@ -268,7 +268,7 @@ foreach($row in $dataTable)
 
 		if($status -eq 0)
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x10) | 0x02 WHERE id = {0}' -f $row.id
+			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `flags` = (`flags` & ~0x10) | 0x02 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="pass">PASSED</td></tr>'
 			Log-Only "info" "  Check DB - OK"
@@ -276,7 +276,7 @@ foreach($row in $dataTable)
 		}
 		else
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x10) | 0x04 WHERE id = {0}' -f $row.id
+			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `flags` = (`flags` & ~0x10) | 0x04 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="error">CHECKDB FAILED</td></tr>'
 			Log-Only "info" "  Check DB - FAILED"
@@ -285,7 +285,7 @@ foreach($row in $dataTable)
 	}
 	else
 	{
-		$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x10) | 0x08 WHERE id = {0}' -f $row.id
+		$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `flags` = (`flags` & ~0x10) | 0x08 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
 		$cmd.ExecuteNonQuery() | Out-Null
 		$body += '<td class="error">RESTORE FAILED</td></tr>'
 	}
