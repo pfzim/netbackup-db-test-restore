@@ -26,7 +26,7 @@ if(!file_exists('inc.config.php'))
 	require_once("inc.config.php");
 
 $g_flag_names = array("WAITING FOR TEST", "OK", "CHECKDB FAILED", "RESTORE FAILED", "TESTING IN PROGRESS", "NOT FOUND");
-$g_flag_html = array('<span class="warn">WAITING FOR TEST</span>', '<span class="pass">OK</span>', '<span class="error">CHECKDB FAILED</span>', '<span class="error">RESTORE FAILED</span>', '<span class="warn">TESTING IN PROGRESS</span>', '<span class="error">NOT FOUND</span>');
+$g_flag_html = array('<span class="warn">WAITING&nbsp;FOR&nbsp;TEST</span>', '<span class="pass">OK</span>', '<span class="error">CHECKDB&nbsp;FAILED</span>', '<span class="error">RESTORE&nbsp;FAILED</span>', '<span class="warn">TESTING&nbsp;IN&nbsp;PROGRESS</span>', '<span class="error">NOT&nbsp;FOUND</span>');
 
 function bits_to_array($flag_names, $flag)
 {
@@ -254,7 +254,7 @@ function bits_to_array($flag_names, $flag)
 
 			header("Content-Type: text/html; charset=utf-8");
 
-			$db->select_assoc_ex($images, rpv("SELECT m.`id`, FROM_UNIXTIME(m.`backup_time`) AS `date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`flags` FROM @images AS m"));
+			$db->select_assoc_ex($images, rpv("SELECT m.`id`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`, m.`duration`, m.`flags` FROM @images AS m"));
 			include('templ/tpl.main.php');
 		}
 		exit;
@@ -272,7 +272,7 @@ function bits_to_array($flag_names, $flag)
 
 			header("Content-Type: text/html; charset=utf-8");
 
-			$db->select_assoc_ex($images, rpv("SELECT m.`id`, FROM_UNIXTIME(m.`backup_time`) AS `date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`flags` FROM @images AS m WHERE m.`flags` & 0xFFFFFFDF"));
+			$db->select_assoc_ex($images, rpv("SELECT m.`id`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`, m.`duration`, m.`flags` FROM @images AS m WHERE m.`flags` & 0xFFFFFFDF"));
 			include('templ/tpl.main.php');
 		}
 		exit;

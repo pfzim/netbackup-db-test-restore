@@ -161,7 +161,7 @@ $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 $cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, FROM_UNIXTIME(m.`backup_time`) AS `backup_date`, m.`nbimage`, m.`mdf`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01'
 
 $dataTable = New-Object System.Data.DataTable
-(New-Object system.Data.odbc.odbcDataAdapter($cmd)).fill($dataTable)
+(New-Object system.Data.odbc.odbcDataAdapter($cmd)).fill($dataTable) | Out-Null
 
 $media_required = @()
 foreach($media_list in $dataTable.media_list)
@@ -278,7 +278,7 @@ foreach($row in $dataTable)
 
 		if($status -eq 0)
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = (`flags` & ~0x10) | 0x02 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
+			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = 0x02 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="pass">PASSED</td></tr>'
 			Log-Only "info" "  Check DB - OK"
@@ -286,7 +286,7 @@ foreach($row in $dataTable)
 		}
 		else
 		{
-			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = (`flags` & ~0x10) | 0x04 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
+			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = 0x04 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
 			$cmd.ExecuteNonQuery() | Out-Null
 			$body += '<td class="error">CHECKDB FAILED</td></tr>'
 			Log-Only "info" "  Check DB - FAILED"
@@ -295,7 +295,7 @@ foreach($row in $dataTable)
 	}
 	else
 	{
-		$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `flags` = (`flags` & ~0x10) | 0x08 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
+		$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = 0, `flags` = 0x08 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
 		$cmd.ExecuteNonQuery() | Out-Null
 		$body += '<td class="error">RESTORE FAILED</td></tr>'
 	}
