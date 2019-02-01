@@ -180,7 +180,7 @@ foreach($row in $dataTable.Rows)
             $media_required += $media
         }
     }
-	$table += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>" -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date
+	$table += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td></tr>" -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date, $row.media_list
 }
 
 $media_required | Sort-Object
@@ -194,7 +194,7 @@ $body += @'
 </p>
 <h1>Список БД для восстановления</h1>
 <table>
-	<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th></tr>
+	<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Media</th></tr>
 	{1}
 </table>
 '@ -f ($media_required -join "<br />"), $table
@@ -214,12 +214,12 @@ $body = $header
 $body += @'
 <h1>Результат тестового восстановления резервных копий баз данных</h1>
 <table>
-<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Restore Time</th><th>Result</th></tr>
+<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Media</th><th>Restore Time</th><th>Result</th></tr>
 '@
 
 foreach($row in $dataTable.Rows)
 {
-	$body += '<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td>' -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date
+	$body += '<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td>' -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date, $row.media_list
 
 	Log-Screen "pass" ("DB: " + $row.db +", Image: " + $row.nbimage)
 	Log-Screen "info" ("  Media required: " + $row.media_list)
@@ -261,7 +261,7 @@ foreach($row in $dataTable.Rows)
 		$dbsize = 0
 		try
 		{
-			$result = Invoke-SQL -dataSource $server -sqlCommand "SELECT SUM(size) * 8. AS bytes FROM sys.master_files WHERE DB_NAME(database_id) = 'NB_Test_Restore'"
+			$result = Invoke-SQL -dataSource $server -sqlCommand "SELECT SUM(size) * 8. * 1024 AS bytes FROM sys.master_files WHERE DB_NAME(database_id) = 'NB_Test_Restore'"
 			$dbsize = $result[0].bytes
 		}
 		catch
@@ -323,7 +323,7 @@ foreach($row in $dataTable.Rows)
 	catch
 	{
 		Log-Screen "error" "Error drop test DB"
-		$body += '<tr><td class="error">Error drop test DB</td></tr>'
+		$body += '<tr><td colspan=8 class="error">Error drop test DB</td></tr>'
 	}
 }
 

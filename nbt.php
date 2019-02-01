@@ -26,7 +26,7 @@ if(!file_exists('inc.config.php'))
 	require_once("inc.config.php");
 
 $g_flag_names = array("WAITING FOR TEST", "OK", "CHECKDB FAILED", "RESTORE FAILED", "TESTING IN PROGRESS", "NOT FOUND");
-$g_flag_html = array('<span class="warn">WAITING&nbsp;FOR&nbsp;TEST</span>', '<span class="pass">OK</span>', '<span class="error">CHECKDB&nbsp;FAILED</span>', '<span class="error">RESTORE&nbsp;FAILED</span>', '<span class="warn">TESTING&nbsp;IN&nbsp;PROGRESS</span>', '<span class="error">NOT&nbsp;FOUND</span>');
+$g_flag_html = array('<nobr><span class="warn">WAITING FOR TEST</span></nobr>', '<nobr><span class="pass">OK</span></nobr>', '<nobr><span class="error">CHECKDB FAILED</span></nobr>', '<nobr><span class="error">RESTORE FAILED</span></nobr>', '<nobr><span class="warn">TESTING IN PROGRESS</span></nobr>', '<nobr><span class="error">NOT FOUND</span></nobr>');
 
 function bits_to_array($flag_names, $flag)
 {

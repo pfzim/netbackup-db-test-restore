@@ -149,7 +149,16 @@ foreach($j in $json)
 			if($dataTable.Rows.Count -gt 0)
 			{
 				$row = $dataTable.Rows[0]
-				$media_list_exist = $row.media_list -split ","
+
+				if($row.media_list.Length -gt 0)
+				{
+					$media_list_exist = $row.media_list -split ","
+				}
+				else
+				{
+					$media_list_exist = @()
+				}
+
 				foreach($media in $media_list)
 				{
 					if($media -notin $media_list_exist)
@@ -159,7 +168,15 @@ foreach($j in $json)
 					}
 				}
 
-				$logs_exist = $row.logs -split ","
+				if($row.logs.Length -gt 0)
+				{
+					$logs_exist = $row.logs -split ","
+				}
+				else
+				{
+					$logs_exist = @()
+				}
+
 				foreach($log in $logs)
 				{
 					if($log -notin $logs_exist)
@@ -173,7 +190,7 @@ foreach($j in $json)
 				{
 					Write-Host -ForegroundColor Red ("ERROR mdf is different: {0} != {1}" -f $row.mdf, $mdf)
 				}
-				
+
 				$cmd.CommandText = 'UPDATE nbt_images SET `policy_name` = "{0}", `sched_label` = "{1}", `client_name` = "{2}", `backup_time` = "{3}", `expiration` = "{4}", `backupid` = "{13}", `ss_name` = "{5}", `media_list` = "{6}", `date2` = "{8}", `db` = "{9}", `stripes` = "{10}", `mdf` = "{11}", `logs` = "{12}", `flags` = `flags` & ~0x20 WHERE `nbimage` = "{7}"' -f $j.policy_name, $j.sched_label, $j.client_name, $j.backup_time, $j.expiration, $j.ss_name, ($media_list_exist -join ","), $nbimage, $date, $db, $stripes, $mdf, ($logs_exist -join ","), $j.backupid
 			}
 			else
@@ -203,7 +220,7 @@ foreach($j in $json)
 	elseif($mdf_found -or $log_found -or $media_list.Count -gt 0)
 	{
 		$update = $false
-		
+
 		Write-Host -ForegroundColor Yellow ("UPDATE info by calculated image name: {0} {1}" -f $j.backupid, $nbimage_calculated)
 
 		$cmd.CommandText = 'SELECT m.`id`, m.`media_list`, m.`mdf`, m.`logs` FROM nbt_images AS m WHERE m.`nbimage` = "{0}"' -f $nbimage_calculated
@@ -214,7 +231,16 @@ foreach($j in $json)
 		if($dataTable.Rows.Count -gt 0)
 		{
 			$row = $dataTable.Rows[0]
-			$media_list_exist = $row.media_list -split ","
+
+			if($row.media_list.Length -gt 0)
+			{
+				$media_list_exist = $row.media_list -split ","
+			}
+			else
+			{
+				$media_list_exist = @()
+			}
+
 			foreach($media in $media_list)
 			{
 				if($media -notin $media_list_exist)
@@ -225,7 +251,15 @@ foreach($j in $json)
 				}
 			}
 
-			$logs_exist = $row.logs -split ","
+			if($row.logs.Length -gt 0)
+			{
+				$logs_exist = $row.logs -split ","
+			}
+			else
+			{
+				$logs_exist = @()
+			}
+
 			foreach($log in $logs)
 			{
 				if($log -notin $logs_exist)
@@ -248,7 +282,7 @@ foreach($j in $json)
 			$update = $true
 			$cmd.CommandText = 'INSERT INTO nbt_images (`policy_name`, `sched_label`, `client_name`, `backup_time`, `expiration`, `backupid`, `ss_name`, `media_list`, `nbimage`, `date2`, `db`, `stripes`, `mdf`, `logs`, `flags`) VALUES ("{0}", "{1}", "{2}", "{3}", "{4}", "", "{6}", "{7}", "{8}", "{9}", "{10}", "{11}", "{12}", "{13}", 0x20)' -f $j.policy_name, $j.sched_label, $j.client_name, $j.backup_time, $j.expiration, $j.backupid, $j.ss_name, ($media_list -join ","), $nbimage_calculated, $date, $db, $stripes, $mdf, ($logs -join ",")
 		}
-		
+
 		if($update)
 		{
 			Write-Host -ForegroundColor DarkGray ("  " + $cmd.CommandText)
