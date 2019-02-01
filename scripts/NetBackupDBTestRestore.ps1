@@ -6,6 +6,8 @@
 # 0x10 = TESTING IN PROGRESS
 # 0x20 = NOT FOUND
 
+$ErrorActionPreference = "Stop"
+
 $smtp_from = "orchestrator@bristolcapital.ru"
 $smtp_to = "admin@bristolcapital.ru"
 $smtp_server = "smtp.bristolcapital.ru"
@@ -31,7 +33,8 @@ NBIMAGE "{2}"
 SQLHOST "BRC-NBTEST-01"
 SQLINSTANCE "MSSQLSERVER"
 NBSERVER "BRC-NB-01.BRISTOLCAPITAL.RU"
-STRIPES {3:d3}
+#STRIPES {3:d3}
+STRIPES 001
 BROWSECLIENT "{4}"
 MAXTRANSFERSIZE 6
 BLOCKSIZE 7

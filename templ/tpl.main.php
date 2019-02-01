@@ -30,7 +30,7 @@
 				<td><?php eh($row['sched_label']); ?></td>
 				<td><?php eh($row['client_name']); ?></td>
 				<td><?php eh($row['media_list']); ?></td>
-				<td><?php eh($row['dbsize']); ?></td>
+				<td><?php eh(formatBytes($row['dbsize'])); ?></td>
 				<td><?php eh($row['rs_date']); ?></td>
 				<td><?php eh(sprintf("%02d:%02d", intval($row['duration']/60), intval($row['duration']%60))); ?></td>
 				<td><?php echo implode(bits_to_array($g_flag_html, $row['flags']), ' '); ?></td>
