@@ -1,3 +1,5 @@
+# Run restore test for marked images
+
 # Flags
 # 0x01 = WAIT FOR TEST
 # 0x02 = TESTED OK
@@ -161,22 +163,24 @@ $conn.ConnectionString= "DSN=web.bristolcapital.ru;"
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
-$cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, FROM_UNIXTIME(m.`backup_time`) AS `backup_date`, m.`nbimage`, m.`mdf`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01'
+$cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdf`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01 ORDER BY m.`media_list`, m.`backup_time` DESC'
 
 $dataTable = New-Object System.Data.DataTable
 (New-Object system.Data.odbc.odbcDataAdapter($cmd)).fill($dataTable) | Out-Null
 
+$table = ""
 $media_required = @()
-foreach($media_list in $dataTable.media_list)
+foreach($row in $dataTable.Rows)
 {
-    $medias = $media_list -split ","
-    foreach($m in $medias)
+    $media_list = $row.media_list -split ","
+    foreach($media in $media_list)
     {
-        if($m -notin $media_required)
+        if($media -notin $media_required)
         {
-            $media_required += $m
+            $media_required += $media
         }
     }
+	$table += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>" -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date
 }
 
 $media_required | Sort-Object
@@ -185,8 +189,15 @@ $media_required | Sort-Object
 $body = $header
 $body += @'
 <h1>Запущено тестовое восстановление резервных копий баз данных</h1>
-<p>Предположительный список кассет, требуемых для загрузки в библиотеку:<br /><br />{0}</p>
-'@ -f ($media_required -join "<br />")
+<p>Предположительный список кассет, требуемых для загрузки в библиотеку:
+<br /><br />{0}
+</p>
+<h1>Список БД для восстановления</h1>
+<table>
+	<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th></tr>
+	{1}
+</table>
+'@ -f ($media_required -join "<br />"), $table
 
 $body += @'
 </body>
@@ -206,7 +217,7 @@ $body += @'
 <tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Restore Time</th><th>Result</th></tr>
 '@
 
-foreach($row in $dataTable)
+foreach($row in $dataTable.Rows)
 {
 	$body += '<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td>' -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date
 
