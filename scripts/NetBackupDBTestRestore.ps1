@@ -17,6 +17,12 @@ $smtp_server = "smtp.bristolcapital.ru"
 $smtp_creds = New-Object System.Management.Automation.PSCredential ("", (ConvertTo-SecureString "" -AsPlainText -Force))
 
 
+$mdf_template = @'
+MOVE  "{0}"
+TO  "F:\Workdata\NB_Test_Restore_{1}.mdf"
+
+'@
+
 $log_template = @'
 MOVE  "{0}"
 TO  "F:\Workdata\NB_Test_Restore_log_{1}.ldf"
@@ -28,8 +34,7 @@ OPERATION RESTORE
 OBJECTTYPE DATABASE
 RESTORETYPE MOVE
 DATABASE "NB_Test_Restore"
-MOVE  "{0}"
-TO  "F:\Workdata\NB_Test_Restore.mdf"
+{0}
 {1}
 NBIMAGE "{2}"
 SQLHOST "BRC-NBTEST-01"
@@ -163,7 +168,7 @@ $conn.ConnectionString= "DSN=web.bristolcapital.ru;"
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
-$cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdf`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01 ORDER BY m.`media_list`, m.`backup_time` DESC'
+$cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01 ORDER BY m.`media_list`, m.`backup_time` DESC'
 
 $dataTable = New-Object System.Data.DataTable
 (New-Object system.Data.odbc.odbcDataAdapter($cmd)).fill($dataTable) | Out-Null
@@ -172,14 +177,17 @@ $table = ""
 $media_required = @()
 foreach($row in $dataTable.Rows)
 {
-    $media_list = $row.media_list -split ","
-    foreach($media in $media_list)
-    {
-        if($media -notin $media_required)
-        {
-            $media_required += $media
-        }
-    }
+	if($row.media_list.length -gt 0)
+	{
+		$media_list = $row.media_list -split ","
+		foreach($media in $media_list)
+		{
+			if($media -notin $media_required)
+			{
+				$media_required += $media
+			}
+		}
+	}
 	$table += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td></tr>" -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date, $row.media_list
 }
 
@@ -187,17 +195,20 @@ $media_required | Sort-Object
 
 
 $body = $header
+$body += "<h1>Запущено тестовое восстановление резервных копий баз данных</h1>"
+
+if($media_required.Count -gt 0)
+{
+	$body += "<p>Предположительный список кассет, требуемых для загрузки в библиотеку:<br /><br />{0}</p>" -f ($media_required -join "<br />")
+}
+
 $body += @'
-<h1>Запущено тестовое восстановление резервных копий баз данных</h1>
-<p>Предположительный список кассет, требуемых для загрузки в библиотеку:
-<br /><br />{0}
-</p>
 <h1>Список БД для восстановления</h1>
 <table>
 	<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Media</th></tr>
-	{1}
+	{0}
 </table>
-'@ -f ($media_required -join "<br />"), $table
+'@ -f $table
 
 $body += @'
 </body>
@@ -223,13 +234,23 @@ foreach($row in $dataTable.Rows)
 
 	Log-Screen "pass" ("DB: " + $row.db +", Image: " + $row.nbimage)
 	Log-Screen "info" ("  Media required: " + $row.media_list)
-	Log-Screen "info" ("  MDF: " + $row.mdf + ", LOGS: " + $row.logs + ", Stripes: " + $row.stripes)
+	Log-Screen "info" ("  MDF: " + $row.mdfs + ", LOGS: " + $row.logs + ", Stripes: " + $row.stripes)
 
 	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE id = {0}' -f $row.id
 	$cmd.ExecuteNonQuery() | Out-Null
 
 	# create move script
 	
+	$mdfs = $row.mdfs -split ","
+	
+	$mdf = ''
+	$i = 0
+	foreach($m_name in $mdfs)
+	{
+		$mdf += $mdf_template -f $m_name, $i
+		$i++
+	}
+
 	$logs = $row.logs -split ","
 	
 	$log = ''
@@ -240,7 +261,7 @@ foreach($row in $dataTable.Rows)
 		$i++
 	}
 
-	$bch = $bch_template -f $row.mdf, $log, $row.nbimage, $row.stripes, $row.client_name
+	$bch = $bch_template -f $mdf, $log, $row.nbimage, $row.stripes, $row.client_name
 	Set-Content -Path "c:\_temp\restore.bch" -Value $bch
 	
 	Log-Only "info" "  Restoring DB..."
