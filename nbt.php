@@ -179,6 +179,7 @@ function bits_to_array($flag_names, $flag)
 				header('Location: '.$self);
 				exit;
 			}
+			
 			case 'login':
 			{
 				include('templ/tpl.login.php'); // show login form
@@ -189,9 +190,9 @@ function bits_to_array($flag_names, $flag)
 
 	if(!$uid)
 	{
-		//include('templ/tpl.login.php'); // show login form
-		header('Location: '.$self.'?action=login');
-		exit;
+		////include('templ/tpl.login.php'); // show login form
+		//header('Location: '.$self.'?action=login');
+		//exit;
 	}
 
 	switch($action)
@@ -241,6 +242,31 @@ function bits_to_array($flag_names, $flag)
 		}
 		exit;
 
+		case 'export':
+		{
+			header("Content-Type: text/plain; charset=utf-8");
+			header("Content-Disposition: attachment; filename=\"images.json\"; filename*=utf-8''images.json");
+
+			if($db->select_assoc_ex($images, rpv("SELECT m.`id`, m.`backupid`, m.`nbimage`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y %H:%i:%s') AS `bk_date`, DATE_FORMAT(FROM_UNIXTIME(m.`expiration`), '%d.%m.%Y %H:%i:%s') AS `ex_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y %H:%i:%s') AS `rs_date`, m.`duration`, m.`flags`, m.`stripes`, m.`mdfs`, m.`logs`, m.`ss_name` FROM @images AS m ORDER BY m.`backup_time` DESC")))
+			{
+				$result_json = array(
+					'code' => 0,
+					'message' => 'OK',
+					'images' => &$images
+				);
+			}
+			else
+			{
+				$result_json = array(
+					'code' => 1,
+					'message' => $db->get_last_error()
+				);
+			}
+
+			echo json_encode($result_json, JSON_PRETTY_PRINT);
+		}
+		exit;
+		
 		case 'all':
 		{
 			/*

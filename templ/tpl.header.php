@@ -5,14 +5,10 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<title>NetBackup DB report</title>
-		<link type="text/css" href="templ/pikaday.css" rel="stylesheet" />
 		<link type="text/css" href="templ/style.css" rel="stylesheet" />
-		<?php if($uid) { ?>
 		<script src="nbt.js"></script>
-		<?php } ?>
 	</head>
 	<body>
-		<?php if($uid) { ?>
 		<ul class="menu-bar">
 			<li><a href="<?php eh("$self"); ?>">Home</a></li>
 			<li><a href="?action=all">All images</a></li>
@@ -24,4 +20,3 @@
 				<?php } ?>
 			</ul>
 		</ul>
-		<?php } ?>

@@ -11,7 +11,7 @@
 $ErrorActionPreference = "Stop"
 
 $smtp_from = "orchestrator@bristolcapital.ru"
-$smtp_to = "admin@bristolcapital.ru"
+$smtp_to = @("admin@bristolcapital.ru", "systems@bristolcapital.ru")
 $smtp_server = "smtp.bristolcapital.ru"
 
 $smtp_creds = New-Object System.Management.Automation.PSCredential ("", (ConvertTo-SecureString "" -AsPlainText -Force))
@@ -168,7 +168,40 @@ $conn.ConnectionString= "DSN=web.bristolcapital.ru;"
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
-$cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01 ORDER BY m.`media_list`, m.`backup_time` DESC'
+# Select images marked for test
+# $cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01 ORDER BY m.`media_list`, m.`backup_time` DESC'
+
+$today = Get-Date
+
+# Select Full-Week images for last 1 month
+if($today.Day -lt 7 -and $today.DayOfWeek -eq 1)
+{
+	$select_week = 'OR (k.sched_label = "Full-Week" AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 1 MONTH))'
+}
+
+# Select Full-Month images for last 3 month
+if($today.Day -lt 7 -and $today.Month -in (1, 6))
+{
+	$select_month = 'OR (k.sched_label = "Full-Month" AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH))'
+
+	# Select Other images for last 3 month
+	#$select_month += ' OR (k.sched_label NOT IN ("Full-Month", "Full-Day", "Full-Week") AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH))'
+}
+
+$cmd.CommandText = @'
+SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags`
+FROM nbt_images AS m
+WHERE m.id IN (
+SELECT MIN(k.id)
+FROM nbt_images AS k
+WHERE
+(k.sched_label = "Full-Day" AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 7 DAY))
+{0}
+{1}
+GROUP BY k.db, k.client_name, k.policy_name, k.sched_label)
+ORDER BY m.`media_list`, m.`backup_time` DESC
+'@ -f $select_week, $select_month
+
 
 $dataTable = New-Object System.Data.DataTable
 (New-Object system.Data.odbc.odbcDataAdapter($cmd)).fill($dataTable) | Out-Null

@@ -18,7 +18,9 @@
 				<th width="5%">Restore Date</th>
 				<th width="5%">Duration</th>
 				<th width="10%">Status</th>
-				<th width="5%">Operations</th>
+				<?php if($uid) { ?>
+					<th width="5%">Operations</th>
+				<?php } ?>
 			</tr>
 			</thead>
 			<tbody id="table-data">
@@ -30,7 +32,7 @@
 				<td><?php eh($row['sched_label']); ?></td>
 				<td><?php eh($row['client_name']); ?></td>
 				<td><?php eh($row['media_list']); ?></td>
-				<td><?php eh(formatBytes($row['dbsize'])); ?></td>
+				<td><?php eh(formatBytes($row['dbsize'], 0)); ?></td>
 				<td><?php eh($row['rs_date']); ?></td>
 				<td><?php eh(sprintf("%02d:%02d", intval($row['duration']/60), intval($row['duration']%60))); ?></td>
 				<td><?php echo implode(bits_to_array($g_flag_html, $row['flags']), ' '); ?></td>
