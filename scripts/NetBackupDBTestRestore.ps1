@@ -224,7 +224,7 @@ foreach($row in $dataTable.Rows)
 	$table += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td></tr>" -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date, $row.media_list
 }
 
-$media_required | Sort-Object
+$media_required = $media_required | Sort-Object
 
 
 $body = $header

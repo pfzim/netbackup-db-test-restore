@@ -12,6 +12,7 @@
 		<ul class="menu-bar">
 			<li><a href="<?php eh("$self"); ?>">Home</a></li>
 			<li><a href="?action=all">All images</a></li>
+			<li><a href="?action=export">Export</a></li>
 			<ul style="float:right;list-style-type:none;">
 				<?php if($uid) { ?>
 				<li><a href="?action=logoff">Log Out</a></li>

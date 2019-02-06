@@ -322,6 +322,10 @@ foreach($j in $json)
 	}
     <##>
 }
+
+$cmd.CommandText = 'UPDATE `nbt_config` SET `value` = NOW() WHERE `name` = "last_update"'
+$cmd.ExecuteNonQuery() | Out-Null
+
 $conn.close()
 
 

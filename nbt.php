@@ -247,11 +247,14 @@ function bits_to_array($flag_names, $flag)
 			header("Content-Type: text/plain; charset=utf-8");
 			header("Content-Disposition: attachment; filename=\"images.json\"; filename*=utf-8''images.json");
 
-			if($db->select_assoc_ex($images, rpv("SELECT m.`id`, m.`backupid`, m.`nbimage`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y %H:%i:%s') AS `bk_date`, DATE_FORMAT(FROM_UNIXTIME(m.`expiration`), '%d.%m.%Y %H:%i:%s') AS `ex_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y %H:%i:%s') AS `rs_date`, m.`duration`, m.`flags`, m.`stripes`, m.`mdfs`, m.`logs`, m.`ss_name` FROM @images AS m ORDER BY m.`backup_time` DESC")))
+			if($db->select_assoc_ex($config, rpv("SELECT m.`value` FROM @config AS m WHERE m.`name` = 'last_update'"))
+			&& $db->select_assoc_ex($images, rpv("SELECT m.`id`, m.`backupid`, m.`nbimage`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y %H:%i:%s') AS `bk_date`, DATE_FORMAT(FROM_UNIXTIME(m.`expiration`), '%d.%m.%Y %H:%i:%s') AS `ex_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y %H:%i:%s') AS `rs_date`, m.`duration`, m.`flags`, m.`stripes`, m.`mdfs`, m.`logs`, m.`ss_name` FROM @images AS m ORDER BY m.`backup_time` DESC"))
+			)
 			{
 				$result_json = array(
 					'code' => 0,
 					'message' => 'OK',
+					'last_update' => $config[0]['value'],
 					'images' => &$images
 				);
 			}
