@@ -5,8 +5,9 @@
 # 0x02 = TESTED OK
 # 0x04 = FAILED CHECKDB
 # 0x08 = FAILED RESTORE
-# 0x10 = TESTING IN PROGRESS
+# 0x10 = RESTORE IN PROGRESS
 # 0x20 = NOT FOUND
+# 0x40 = CHECKDB IN PROGRESS
 
 $ErrorActionPreference = "Stop"
 
@@ -160,6 +161,11 @@ function Invoke-SQL
     return $dataSet.Tables
 }
 
+trap
+{
+	Local-Screen -severity 'error' -message ("TRAPPED ERROR: {0}" -f $_)
+	continue
+}
 
 Log-Screen "info" ("--- " + (Get-Date).ToString("dd/MM/yyyy HH:mm") + " ---")
 
@@ -322,26 +328,42 @@ foreach($row in $dataTable.Rows)
 		{
 		}
 
+		if($conn.State -eq 'Closed')
+		{
+			$conn.open()
+		}
+		$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = 0x40 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
+		$cmd.ExecuteNonQuery() | Out-Null
+
 		Log-Only "info" "  Checking DB..."
 		Write-Host -NoNewline "  Checking DB..."
 
 		$status = 0
-		try
+		
+		if($row.db -ne 'master')
 		{
-			$result = Invoke-SQL -dataSource "brc-nbtest-01" -sqlCommand "DBCC CHECKDB ([NB_Test_Restore]) WITH TABLERESULTS"
-			foreach($r in $result)
+			try
 			{
-				if($r.Status -ne 0)
+				$result = Invoke-SQL -dataSource "brc-nbtest-01" -sqlCommand "DBCC CHECKDB ([NB_Test_Restore]) WITH TABLERESULTS"
+				foreach($r in $result)
 				{
-					$status = 1
+					if($r.Status -ne 0)
+					{
+						$status = 1
+					}
 				}
 			}
+			catch
+			{
+				$status = 1
+				Log-Only "error" ("  Exception: " + $_.Exception.Message)
+				Write-Host -NoNewline -ForegroundColor Red (" (" + $_.Exception.Message + ")")
+			}
 		}
-		catch
+
+		if($conn.State -eq 'Closed')
 		{
-			$status = 1
-			Log-Only "error" ("  Exception: " + $_.Exception.Message)
-			Write-Host -NoNewline -ForegroundColor Red (" (" + $_.Exception.Message + ")")
+			$conn.open()
 		}
 
 		if($status -eq 0)
