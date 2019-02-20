@@ -199,13 +199,13 @@ $today = Get-Date
 # Select Full-Week images for last 1 month
 if($today.Day -lt 7 -and $today.DayOfWeek -eq 1)
 {
-	$select_week = 'OR (k.sched_label = "Full-Week" AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 1 MONTH))'
+	$select_week = 'OR (k.`sched_label` = "Full-Week" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND k.`flags` = 0)'
 }
 
 # Select Full-Month images for last 3 month
 if($today.Day -lt 7 -and $today.Month -in (1, 6))
 {
-	$select_month = 'OR (k.sched_label = "Full-Month" AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH))'
+	$select_month = 'OR (k.`sched_label` = "Full-Month" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 3 MONTH) AND k.`flags` = 0)'
 
 	# Select Other images for last 3 month
 	#$select_month += ' OR (k.sched_label NOT IN ("Full-Month", "Full-Day", "Full-Week") AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH))'
@@ -214,14 +214,14 @@ if($today.Day -lt 7 -and $today.Month -in (1, 6))
 $cmd.CommandText = @'
 SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags`
 FROM nbt_images AS m
-WHERE m.id IN (
-SELECT MIN(k.id)
+WHERE m.`id` IN (
+SELECT MIN(k.`id`)
 FROM nbt_images AS k
 WHERE
-(k.sched_label = "Full-Day" AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 7 DAY))
+(k.`sched_label` = "Full-Day" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND k.`flags` = 0)
 {0}
 {1}
-GROUP BY k.db, k.client_name, k.policy_name, k.sched_label)
+GROUP BY k.`db`, k.`client_name`, k.`policy_name`, k.`sched_label`)
 ORDER BY m.`media_list`, m.`backup_time`
 '@ -f $select_week, $select_month
 
@@ -292,7 +292,7 @@ foreach($row in $dataTable.Rows)
 	Log-Screen "info" ("  Media required: " + $row.media_list)
 	Log-Screen "info" ("  MDF: " + $row.mdfs + ", LOGS: " + $row.logs + ", Stripes: " + $row.stripes)
 
-	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE id = {0}' -f $row.id
+	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE `id` = {0}' -f $row.id
 	ExecuteNonQueryFailover -cmd $cmd
 
 	# create move script
