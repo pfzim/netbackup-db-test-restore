@@ -25,8 +25,8 @@ if(!file_exists('inc.config.php'))
 
 	require_once("inc.config.php");
 
-$g_flag_names = array("WAITING FOR TEST", "OK", "CHECKDB FAILED", "RESTORE FAILED", "TESTING IN PROGRESS", "NOT FOUND");
-$g_flag_html = array('<nobr><span class="warn">WAITING FOR TEST</span></nobr>', '<nobr><span class="pass">OK</span></nobr>', '<nobr><span class="error">CHECKDB FAILED</span></nobr>', '<nobr><span class="error">RESTORE FAILED</span></nobr>', '<nobr><span class="warn">TESTING IN PROGRESS</span></nobr>', '<nobr><span class="error">NOT FOUND</span></nobr>');
+$g_flag_names = array("WAITING FOR TEST", "OK", "CHECKDB FAILED", "RESTORE FAILED", "RESTORE IN PROGRESS", "NOT FOUND", "CHECKDB IN PROGRESS");
+$g_flag_html = array('<nobr><span class="warn">WAITING FOR TEST</span></nobr>', '<nobr><span class="pass">OK</span></nobr>', '<nobr><span class="error">CHECKDB FAILED</span></nobr>', '<nobr><span class="error">RESTORE FAILED</span></nobr>', '<nobr><span class="warn">RESTORE IN PROGRESS</span></nobr>', '<nobr><span class="error">NOT FOUND</span></nobr>', '<nobr><span class="warn">CHECKDB IN PROGRESS</span></nobr>');
 
 function bits_to_array($flag_names, $flag)
 {
@@ -283,7 +283,7 @@ function bits_to_array($flag_names, $flag)
 
 			header("Content-Type: text/html; charset=utf-8");
 
-			$db->select_assoc_ex($images, rpv("SELECT m.`id`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`, m.`duration`, m.`flags` FROM @images AS m ORDER BY m.`backup_time` DESC"));
+			$db->select_assoc_ex($images, rpv("SELECT m.`id`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`, m.`duration`, m.`flags` FROM @images AS m ORDER BY m.`db`, m.`client_name`, m.`backup_time` DESC"));
 			include('templ/tpl.main.php');
 		}
 		exit;
@@ -301,7 +301,7 @@ function bits_to_array($flag_names, $flag)
 
 			header("Content-Type: text/html; charset=utf-8");
 
-			$db->select_assoc_ex($images, rpv("SELECT m.`id`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`, m.`duration`, m.`flags` FROM @images AS m WHERE m.`flags` & 0xFFFFFFDF ORDER BY m.`backup_time` DESC"));
+			$db->select_assoc_ex($images, rpv("SELECT m.`id`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`, m.`duration`, m.`flags` FROM @images AS m WHERE m.`flags` & 0xFFFFFFDF AND (m.`flags` & 0x20) = 0 ORDER BY m.`db`, m.`client_name`, m.`backup_time` DESC"));
 			include('templ/tpl.main.php');
 		}
 		exit;

@@ -161,9 +161,26 @@ function Invoke-SQL
     return $dataSet.Tables
 }
 
+function ExecuteNonQueryFailover($cmd)
+{
+	$retry = 5
+	while($retry)
+	{
+		try
+		{
+			$cmd.ExecuteNonQuery() | Out-Null
+			$retry = 0
+		}
+		catch
+		{
+			$retry--
+		}
+	}
+}
+
 trap
 {
-	Local-Screen -severity 'error' -message ("TRAPPED ERROR: {0}" -f $_)
+	Log-Screen -severity 'error' -message ("TRAPPED ERROR: {0}" -f $_)
 	continue
 }
 
@@ -205,7 +222,7 @@ WHERE
 {0}
 {1}
 GROUP BY k.db, k.client_name, k.policy_name, k.sched_label)
-ORDER BY m.`media_list`, m.`backup_time` DESC
+ORDER BY m.`media_list`, m.`backup_time`
 '@ -f $select_week, $select_month
 
 
@@ -276,7 +293,7 @@ foreach($row in $dataTable.Rows)
 	Log-Screen "info" ("  MDF: " + $row.mdfs + ", LOGS: " + $row.logs + ", Stripes: " + $row.stripes)
 
 	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE id = {0}' -f $row.id
-	$cmd.ExecuteNonQuery() | Out-Null
+	ExecuteNonQueryFailover -cmd $cmd
 
 	# create move script
 	
@@ -328,12 +345,8 @@ foreach($row in $dataTable.Rows)
 		{
 		}
 
-		if($conn.State -eq 'Closed')
-		{
-			$conn.open()
-		}
 		$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = 0x40 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
-		$cmd.ExecuteNonQuery() | Out-Null
+		ExecuteNonQueryFailover -cmd $cmd
 
 		Log-Only "info" "  Checking DB..."
 		Write-Host -NoNewline "  Checking DB..."
@@ -361,15 +374,10 @@ foreach($row in $dataTable.Rows)
 			}
 		}
 
-		if($conn.State -eq 'Closed')
-		{
-			$conn.open()
-		}
-
 		if($status -eq 0)
 		{
 			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = 0x02 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
-			$cmd.ExecuteNonQuery() | Out-Null
+			ExecuteNonQueryFailover -cmd $cmd
 			$body += '<td class="pass">PASSED</td></tr>'
 			Log-Only "info" "  Check DB - OK"
 			Write-Host -ForegroundColor Green (" OK")
@@ -377,7 +385,7 @@ foreach($row in $dataTable.Rows)
 		else
 		{
 			$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = {2}, `flags` = 0x04 WHERE id = {0}' -f $row.id, $duration.TotalMinutes, $dbsize
-			$cmd.ExecuteNonQuery() | Out-Null
+			ExecuteNonQueryFailover -cmd $cmd
 			$body += '<td class="error">CHECKDB FAILED</td></tr>'
 			Log-Only "info" "  Check DB - FAILED"
 			Write-Host -ForegroundColor Red (" FAILED")
@@ -386,7 +394,7 @@ foreach($row in $dataTable.Rows)
 	else
 	{
 		$cmd.CommandText = 'UPDATE nbt_images SET `restore_date` = NOW(), `duration` = {1}, `dbsize` = 0, `flags` = 0x08 WHERE id = {0}' -f $row.id, $duration.TotalMinutes
-		$cmd.ExecuteNonQuery() | Out-Null
+		ExecuteNonQueryFailover -cmd $cmd
 		$body += '<td class="error">RESTORE FAILED</td></tr>'
 	}
 
