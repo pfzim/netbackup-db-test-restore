@@ -5,7 +5,7 @@
 # 0x02 = TESTED OK
 # 0x04 = FAILED CHECKDB
 # 0x08 = FAILED RESTORE
-# 0x10 = RESTORE IN PROGRESS
+# 0x10 = RESTORE IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x10)"
 # 0x20 = NOT FOUND
 # 0x40 = CHECKDB IN PROGRESS
 
@@ -150,7 +150,7 @@ function Invoke-SQL
 
     $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
     $command = new-object system.data.sqlclient.sqlcommand($sqlCommand,$connection)
-    $command.CommandTimeout = 86400
+    $command.CommandTimeout = 0
     $connection.Open()
 
     $adapter = New-Object System.Data.sqlclient.sqlDataAdapter $command
@@ -292,6 +292,8 @@ foreach($row in $dataTable.Rows)
 	Log-Screen "info" ("  Media required: " + $row.media_list)
 	Log-Screen "info" ("  MDF: " + $row.mdfs + ", LOGS: " + $row.logs + ", Stripes: " + $row.stripes)
 
+	# mark backup image as "RESTORE IN PROGRESS"
+	
 	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE `id` = {0}' -f $row.id
 	ExecuteNonQueryFailover -cmd $cmd
 
