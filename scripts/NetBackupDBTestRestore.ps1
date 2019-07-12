@@ -11,9 +11,9 @@
 
 $ErrorActionPreference = "Stop"
 
-$smtp_from = "orchestrator@bristolcapital.ru"
-$smtp_to = @("admin@bristolcapital.ru", "systems@bristolcapital.ru")
-$smtp_server = "smtp.bristolcapital.ru"
+$smtp_from = "orchestrator@contoso.com"
+$smtp_to = @("admin@contoso.com", "systems@contoso.com")
+$smtp_server = "smtp.contoso.com"
 
 $smtp_creds = New-Object System.Management.Automation.PSCredential ("", (ConvertTo-SecureString "" -AsPlainText -Force))
 
@@ -38,9 +38,9 @@ DATABASE "NB_Test_Restore"
 {0}
 {1}
 NBIMAGE "{2}"
-SQLHOST "BRC-NBTEST-01"
+SQLHOST "srv-NBTEST-01"
 SQLINSTANCE "MSSQLSERVER"
-NBSERVER "BRC-NB-01.BRISTOLCAPITAL.RU"
+NBSERVER "srv-NB-01.contoso.com"
 #STRIPES {3:d3}
 STRIPES 001
 BROWSECLIENT "{4}"
@@ -187,7 +187,7 @@ trap
 Log-Screen "info" ("--- " + (Get-Date).ToString("dd/MM/yyyy HH:mm") + " ---")
 
 $conn = New-Object System.Data.Odbc.OdbcConnection
-$conn.ConnectionString= "DSN=web.bristolcapital.ru;"
+$conn.ConnectionString= "DSN=web.contoso.com;"
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
@@ -359,7 +359,7 @@ foreach($row in $dataTable.Rows)
 		{
 			try
 			{
-				$result = Invoke-SQL -dataSource "brc-nbtest-01" -sqlCommand "DBCC CHECKDB ([NB_Test_Restore]) WITH TABLERESULTS"
+				$result = Invoke-SQL -dataSource "srv-nbtest-01" -sqlCommand "DBCC CHECKDB ([NB_Test_Restore]) WITH TABLERESULTS"
 				foreach($r in $result)
 				{
 					if($r.Status -ne 0)
@@ -404,7 +404,7 @@ foreach($row in $dataTable.Rows)
 
 	try
 	{
-		$result = Invoke-SQL -dataSource "brc-nbtest-01" -sqlCommand "USE master`r`nIF EXISTS(select * from sys.databases where name='NB_Test_Restore')`r`nDROP DATABASE NB_Test_Restore"
+		$result = Invoke-SQL -dataSource "srv-nbtest-01" -sqlCommand "USE master`r`nIF EXISTS(select * from sys.databases where name='NB_Test_Restore')`r`nDROP DATABASE NB_Test_Restore"
 	}
 	catch
 	{

@@ -7,7 +7,7 @@ Clear-Host
 $sd = (Get-Date).AddDays(-912).ToString("MM/dd/yyyy HH:mm")
 $ed = (Get-Date).ToString("MM/dd/yyyy HH:mm")
 
-#$data = & 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpimagelist.exe' -d $sd -e $ed -json -json_array -client brc-scom-01 -policy SQL_BusinessDB_Gold -st Full
+#$data = & 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpimagelist.exe' -d $sd -e $ed -json -json_array -client srv-scom-01 -policy SQL_BusinessDB_Gold -st Full
 
 #<#
 $data = & 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpimagelist.exe' -d $sd -e $ed -json -json_array -pt MS-SQL-Server -st Full
@@ -15,7 +15,7 @@ $json = $data | ConvertFrom-Json
 <##>
 
 $conn = New-Object System.Data.Odbc.OdbcConnection
-$conn.ConnectionString= "DSN=web.bristolcapital.ru;"
+$conn.ConnectionString= "DSN=web.contoso.com;"
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
