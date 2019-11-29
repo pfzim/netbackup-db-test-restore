@@ -2,12 +2,27 @@
 
 $ErrorActionPreference = "Stop"
 
+$scriptPath = $PSScriptRoot
+if(!$scriptPath)
+{
+	if($MyInvocation.MyCommand.Path)
+	{
+		$scriptPath = Split-Path -parent $MyInvocation.MyCommand.Path
+	}
+	else
+	{
+		$scriptPath = $PSCommandPath
+	}
+}
+
+. ($scriptPath + '\inc.config.ps1')
+
 Clear-Host
 
 $sd = (Get-Date).AddDays(-912).ToString("MM/dd/yyyy HH:mm")
 $ed = (Get-Date).ToString("MM/dd/yyyy HH:mm")
 
-#$data = & 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpimagelist.exe' -d $sd -e $ed -json -json_array -client srv-scom-01 -policy SQL_BusinessDB_Gold -st Full
+#$data = & 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpimagelist.exe' -d $sd -e $ed -json -json_array -client srv-scom-01 -policy SQL_DB_Gold -st Full
 
 #<#
 $data = & 'C:\Program Files\Veritas\NetBackup\bin\admincmd\bpimagelist.exe' -d $sd -e $ed -json -json_array -pt MS-SQL-Server -st Full
@@ -15,7 +30,7 @@ $json = $data | ConvertFrom-Json
 <##>
 
 $conn = New-Object System.Data.Odbc.OdbcConnection
-$conn.ConnectionString= "DSN=web.contoso.com;"
+$conn.ConnectionString = 'DRIVER={{MariaDB ODBC 3.0 Driver}};SERVER={0};DATABASE={1};UID={2};PWD={3};OPTION=4194304' -f $g_config.db_host, $g_config.db_name, $g_config.db_user, $g_config.db_passwd
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 

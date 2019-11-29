@@ -5,15 +5,26 @@
 # 0x02 = TESTED OK
 # 0x04 = FAILED CHECKDB
 # 0x08 = FAILED RESTORE
-# 0x10 = RESTORE IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x10) WHERE `flags` & 0x10"
+# 0x10 = RESTORE IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x10)"
 # 0x20 = NOT FOUND
 # 0x40 = CHECKDB IN PROGRESS
 
 $ErrorActionPreference = "Stop"
 
-$smtp_from = "orchestrator@contoso.com"
-$smtp_to = @("admin@contoso.com", "systems@contoso.com")
-$smtp_server = "smtp.contoso.com"
+$scriptPath = $PSScriptRoot
+if(!$scriptPath)
+{
+	if($MyInvocation.MyCommand.Path)
+	{
+		$scriptPath = Split-Path -parent $MyInvocation.MyCommand.Path
+	}
+	else
+	{
+		$scriptPath = $PSCommandPath
+	}
+}
+
+. ($scriptPath + '\inc.config.ps1')
 
 $smtp_creds = New-Object System.Management.Automation.PSCredential ("", (ConvertTo-SecureString "" -AsPlainText -Force))
 
@@ -38,9 +49,9 @@ DATABASE "NB_Test_Restore"
 {0}
 {1}
 NBIMAGE "{2}"
-SQLHOST "srv-NBTEST-01"
+SQLHOST "{5}"
 SQLINSTANCE "MSSQLSERVER"
-NBSERVER "srv-NB-01.contoso.com"
+NBSERVER "{6}"
 #STRIPES {3:d3}
 STRIPES 001
 BROWSECLIENT "{4}"
@@ -145,8 +156,7 @@ function Invoke-SQL
         [string] $sqlCommand = $(throw "Please specify a query.")
       )
 
-    $connectionString = "Data Source=$dataSource; " +
-            "Integrated Security=SSPI"
+    $connectionString = "Data Source=$dataSource;Integrated Security=SSPI"
 
     $connection = new-object system.data.SqlClient.SQLConnection($connectionString)
     $command = new-object system.data.sqlclient.sqlcommand($sqlCommand,$connection)
@@ -187,7 +197,7 @@ trap
 Log-Screen "info" ("--- " + (Get-Date).ToString("dd/MM/yyyy HH:mm") + " ---")
 
 $conn = New-Object System.Data.Odbc.OdbcConnection
-$conn.ConnectionString= "DSN=web.contoso.com;"
+$conn.ConnectionString = 'DRIVER={{MariaDB ODBC 3.0 Driver}};SERVER={0};DATABASE={1};UID={2};PWD={3};OPTION=4194304' -f $g_config.db_host, $g_config.db_name, $g_config.db_user, $g_config.db_passwd
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
@@ -319,7 +329,7 @@ foreach($row in $dataTable.Rows)
 		$i++
 	}
 
-	$bch = $bch_template -f $mdf, $log, $row.nbimage, $row.stripes, $row.client_name
+	$bch = $bch_template -f $mdf, $log, $row.nbimage, $row.stripes, $row.client_name, $g_config.restore_server, $g_config.backup_server
 	Set-Content -Path "c:\_temp\restore.bch" -Value $bch
 	
 	Log-Only "info" "  Restoring DB..."
@@ -340,7 +350,7 @@ foreach($row in $dataTable.Rows)
 		$dbsize = 0
 		try
 		{
-			$result = Invoke-SQL -dataSource $server -sqlCommand "SELECT SUM(size) * 8. * 1024 AS bytes FROM sys.master_files WHERE DB_NAME(database_id) = 'NB_Test_Restore'"
+			$result = Invoke-SQL -dataSource $g_config.restore_server -sqlCommand "SELECT SUM(size) * 8. * 1024 AS bytes FROM sys.master_files WHERE DB_NAME(database_id) = 'NB_Test_Restore'"
 			$dbsize = $result[0].bytes
 		}
 		catch
@@ -359,7 +369,7 @@ foreach($row in $dataTable.Rows)
 		{
 			try
 			{
-				$result = Invoke-SQL -dataSource "srv-nbtest-01" -sqlCommand "DBCC CHECKDB ([NB_Test_Restore]) WITH TABLERESULTS"
+				$result = Invoke-SQL -dataSource $g_config.restore_server -sqlCommand "DBCC CHECKDB ([NB_Test_Restore]) WITH TABLERESULTS"
 				foreach($r in $result)
 				{
 					if($r.Status -ne 0)
@@ -404,7 +414,7 @@ foreach($row in $dataTable.Rows)
 
 	try
 	{
-		$result = Invoke-SQL -dataSource "srv-nbtest-01" -sqlCommand "USE master`r`nIF EXISTS(select * from sys.databases where name='NB_Test_Restore')`r`nDROP DATABASE NB_Test_Restore"
+		$result = Invoke-SQL -dataSource $g_config.restore_server -sqlCommand "USE master`r`nIF EXISTS(select * from sys.databases where name='NB_Test_Restore')`r`nDROP DATABASE NB_Test_Restore"
 	}
 	catch
 	{
@@ -421,4 +431,4 @@ $body += @'
 </html>
 '@
 
-Send-MailMessage -from $smtp_from -to $smtp_to -Encoding UTF8 -subject "Result DB backup tests" -bodyashtml -body $body -smtpServer $smtp_server -Credential $smtp_creds
+Send-MailMessage -from $g_config.smtp_from -to $g_config.smtp_to -Encoding UTF8 -subject "Result DB backup tests" -bodyashtml -body $body -smtpServer $g_config.smtp_server -Credential $g_config.smtp_creds
