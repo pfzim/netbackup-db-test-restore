@@ -26,7 +26,7 @@ if(!$scriptPath)
 
 . ($scriptPath + '\inc.config.ps1')
 
-$smtp_creds = New-Object System.Management.Automation.PSCredential ("", (ConvertTo-SecureString "" -AsPlainText -Force))
+$smtp_creds = New-Object System.Management.Automation.PSCredential ($g_config.smtp_login, (ConvertTo-SecureString $g_config.smtp_passwd -AsPlainText -Force))
 
 
 $mdf_template = @'
@@ -431,4 +431,4 @@ $body += @'
 </html>
 '@
 
-Send-MailMessage -from $g_config.smtp_from -to $g_config.smtp_to -Encoding UTF8 -subject "Result DB backup tests" -bodyashtml -body $body -smtpServer $g_config.smtp_server -Credential $g_config.smtp_creds
+Send-MailMessage -from $g_config.smtp_from -to $g_config.smtp_to -Encoding UTF8 -subject "Result DB backup tests" -bodyashtml -body $body -smtpServer $g_config.smtp_server -Credential $smtp_creds
