@@ -5,7 +5,7 @@
 # 0x02 = TESTED OK
 # 0x04 = FAILED CHECKDB
 # 0x08 = FAILED RESTORE
-# 0x10 = RESTORE IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x10)"
+# 0x10 = RESTORE IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x10) WHERE `flags` & 0x10"
 # 0x20 = NOT FOUND
 # 0x40 = CHECKDB IN PROGRESS
 

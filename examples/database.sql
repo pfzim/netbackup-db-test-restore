@@ -2,9 +2,16 @@ DROP TABLE IF EXISTS `nbt`.`nbt_access`;
 CREATE TABLE  `nbt`.`nbt_access` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `dn` varchar(1024) NOT NULL DEFAULT '',
-  `oid` int(10) unsigned NOT NULL DEFAULT '0',
+  `oid` int(10) unsigned NOT NULL DEFAULT 0,
   `allow_bits` binary(32) NOT NULL DEFAULT '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `nbt`.`nbt_config`;
+CREATE TABLE  `nbt`.`nbt_config` (
+  `name` varchar(255) NOT NULL DEFAULT '',
+  `value` varchar(8192) NOT NULL DEFAULT '',
+  PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `nbt`.`nbt_images`;
@@ -23,14 +30,14 @@ CREATE TABLE  `nbt`.`nbt_images` (
   `stripes` int(10) unsigned NOT NULL,
   `mdfs` varchar(255) NOT NULL,
   `logs` varchar(4096) NOT NULL,
-  `flags` int(10) unsigned NOT NULL DEFAULT '0',
+  `flags` int(10) unsigned NOT NULL DEFAULT 0,
   `date2` varchar(255) NOT NULL,
-  `restore_date` datetime NOT NULL,
-  `duration` int(10) unsigned NOT NULL DEFAULT '0',
-  `dbsize` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `restore_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `duration` int(10) unsigned NOT NULL DEFAULT 0,
+  `dbsize` bigint(20) unsigned NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nbimage` (`nbimage`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `nbt`.`nbt_media`;
 CREATE TABLE  `nbt`.`nbt_media` (
@@ -46,4 +53,4 @@ CREATE TABLE  `nbt`.`nbt_users` (
   `login` varchar(1024) NOT NULL DEFAULT '',
   `sid` varchar(32) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
