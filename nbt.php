@@ -288,6 +288,42 @@ function bits_to_array($flag_names, $flag)
 		}
 		exit;
 
+		case 'view1':
+		{
+			/*
+			if(!$user_perm->check_permission($id, LPD_ACCESS_READ))
+			{
+				$error_msg = "Access denied to section ".$id." for user ".$uid."!";
+				include('templ/tpl.message.php');
+				exit;
+			}
+			*/
+
+			header("Content-Type: text/html; charset=utf-8");
+
+			$db->select_assoc_ex($images, rpv("
+				SELECT
+					m.`id`,
+					DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`,
+					m.`db`,
+					m.`policy_name`,
+					m.`sched_label`,
+					m.`client_name`,
+					m.`media_list`,
+					m.`dbsize`,
+					DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`,
+					m.`duration`,
+					m.`flags`
+				FROM @images AS m
+				WHERE
+					m.`backup_time` >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 1 WEEK))
+					AND m.`policy_name` <> 'SQL_SystemDB'
+				ORDER BY m.`restore_date` DESC, m.`db`, m.`client_name`
+			"));
+			include('templ/tpl.main.php');
+		}
+		exit;
+
 		case '':
 		{
 			/*
@@ -301,7 +337,24 @@ function bits_to_array($flag_names, $flag)
 
 			header("Content-Type: text/html; charset=utf-8");
 
-			$db->select_assoc_ex($images, rpv("SELECT m.`id`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), '%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`, m.`sched_label`, m.`client_name`, m.`media_list`, m.`dbsize`, DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`, m.`duration`, m.`flags` FROM @images AS m WHERE m.`flags` & 0xFFFFFFDF AND (m.`flags` & 0x20) = 0 ORDER BY m.`db`, m.`client_name`, m.`backup_time` DESC"));
+			$db->select_assoc_ex($images, rpv("
+				SELECT
+					m.`id`,
+					DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`),
+					'%d.%m.%Y') AS `bk_date`, m.`db`, m.`policy_name`,
+					m.`sched_label`,
+					m.`client_name`,
+					m.`media_list`,
+					m.`dbsize`,
+					DATE_FORMAT(m.`restore_date`, '%d.%m.%Y') AS `rs_date`,
+					m.`duration`,
+					m.`flags`
+				FROM @images AS m
+				WHERE
+					m.`flags` & 0xFFFFFFDF 
+					AND (m.`flags` & 0x20) = 0
+				ORDER BY m.`db`, m.`client_name`, m.`backup_time` DESC
+			"));
 			include('templ/tpl.main.php');
 		}
 		exit;

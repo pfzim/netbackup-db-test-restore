@@ -7,7 +7,7 @@
 # 0x08 = FAILED RESTORE
 # 0x10 = RESTORE IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x10) WHERE `flags` & 0x10"
 # 0x20 = NOT FOUND
-# 0x40 = CHECKDB IN PROGRESS
+# 0x40 = CHECKDB IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x40) WHERE `flags` & 0x40"
 
 $ErrorActionPreference = "Stop"
 
@@ -293,6 +293,11 @@ $body += @'
 <table>
 <tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Media</th><th>Restore Time</th><th>Result</th></tr>
 '@
+
+# Reset statuses remaining from the previous launch
+
+$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x51) WHERE `flags` & 0x51'
+ExecuteNonQueryFailover -cmd $cmd
 
 foreach($row in $dataTable.Rows)
 {
