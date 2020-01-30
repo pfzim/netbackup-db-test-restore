@@ -1,13 +1,20 @@
 # Run restore test for marked images
 
 # Flags
-# 0x01 = WAIT FOR TEST
+# 0x01 = WAIT FOR TEST          For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x01) WHERE `flags` & 0x01"
 # 0x02 = TESTED OK
 # 0x04 = FAILED CHECKDB
 # 0x08 = FAILED RESTORE
 # 0x10 = RESTORE IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x10) WHERE `flags` & 0x10"
 # 0x20 = NOT FOUND
 # 0x40 = CHECKDB IN PROGRESS    For reset this status: "UPDATE nbt_images SET `flags` = (`flags` & ~0x40) WHERE `flags` & 0x40"
+
+# Mask for (WAIT FOR TEST | RESTORE IN PROGRESS | CHECKDB IN PROGRESS) == 0x51
+
+
+param (
+	[switch] $skipImagesSelection = $false
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -201,40 +208,70 @@ $conn.ConnectionString = 'DRIVER={{MariaDB ODBC 3.0 Driver}};SERVER={0};DATABASE
 $conn.open()
 $cmd = new-object System.Data.Odbc.OdbcCommand("", $conn)
 
-# Select images marked for test
-# $cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01 ORDER BY m.`media_list`, m.`backup_time` DESC'
-
-$today = Get-Date
-
-# Select Full-Week images for last 1 month
-if($today.Day -lt 7 -and $today.DayOfWeek -eq 1)
+if(!$skipImagesSelection)
 {
-	$select_week = 'OR (k.`sched_label` = "Full-Week" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND k.`flags` = 0)'
-}
+	# Select images marked for test
+	# $cmd.CommandText = 'SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags` FROM nbt_images AS m WHERE m.`flags` & 0x01 ORDER BY m.`media_list`, m.`backup_time` DESC'
 
-# Select Full-Month images for last 3 month
-if($today.Day -lt 7 -and $today.Month -in (1, 6))
-{
-	$select_month = 'OR (k.`sched_label` = "Full-Month" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 3 MONTH) AND k.`flags` = 0)'
+	$today = Get-Date
 
-	# Select Other images for last 3 month
-	#$select_month += ' OR (k.sched_label NOT IN ("Full-Month", "Full-Day", "Full-Week") AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH))'
-}
+	# Select Full-Week images for last 1 month
+	if($today.Day -lt 7 -and $today.DayOfWeek -eq 1)
+	{
+		$select_week = 'OR (k.`sched_label` = "Full-Week" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 1 MONTH) AND k.`flags` = 0)'
+	}
 
-$cmd.CommandText = @'
-SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags`
-FROM nbt_images AS m
-WHERE m.`id` IN (
-SELECT MIN(k.`id`)
-FROM nbt_images AS k
-WHERE
-(k.`sched_label` = "Full-Day" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND k.`flags` = 0)
-{0}
-{1}
-GROUP BY k.`db`, k.`client_name`, k.`policy_name`, k.`sched_label`)
-ORDER BY m.`media_list`, m.`backup_time`
+	# Select Full-Month images for last 3 month
+	if($today.Day -lt 7 -and $today.Month -in (1, 6))
+	{
+		$select_month = 'OR (k.`sched_label` = "Full-Month" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 3 MONTH) AND k.`flags` = 0)'
+
+		# Select Other images for last 3 month
+		#$select_month += ' OR (k.sched_label NOT IN ("Full-Month", "Full-Day", "Full-Week") AND FROM_UNIXTIME(k.backup_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH))'
+	}
+
+	$cmd.CommandText = @'
+		SELECT m.`id`, m.`client_name`, m.`media_list`, m.`client_name`, m.`policy_name`, m.`sched_label`, m.`db`, DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`, m.`nbimage`, m.`mdfs`, m.`logs`, m.`stripes`, m.`flags`
+		FROM nbt_images AS m
+		WHERE m.`id` IN (
+		SELECT MIN(k.`id`)
+		FROM nbt_images AS k
+		WHERE
+		(k.`sched_label` = "Full-Day" AND FROM_UNIXTIME(k.`backup_time`) >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND k.`flags` = 0)
+		{0}
+		{1}
+		GROUP BY k.`db`, k.`client_name`, k.`policy_name`, k.`sched_label`)
+		ORDER BY m.`media_list`, m.`backup_time`
 '@ -f $select_week, $select_month
-
+}
+else
+{
+	# Getting previously selected for test images
+	
+	$cmd.CommandText = @'
+		SELECT
+			m.`id`,
+			m.`client_name`,
+			m.`media_list`,
+			m.`client_name`,
+			m.`policy_name`,
+			m.`sched_label`,
+			m.`db`,
+			DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`,
+			m.`nbimage`,
+			m.`mdfs`,
+			m.`logs`,
+			m.`stripes`,
+			m.`flags`
+		FROM
+			nbt_images AS m
+		WHERE
+			m.`flags` & 0x01
+		ORDER BY
+			m.`media_list`, m.`backup_time`
+		LIMIT 1
+'@
+}
 
 $dataTable = New-Object System.Data.DataTable
 (New-Object system.Data.odbc.odbcDataAdapter($cmd)).fill($dataTable) | Out-Null
@@ -269,19 +306,19 @@ if($media_required.Count -gt 0)
 }
 
 $body += @'
-<h1>Список БД для восстановления</h1>
-<table>
-	<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Media</th></tr>
-	{0}
-</table>
+	<h1>Список БД для восстановления</h1>
+	<table>
+		<tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Media</th></tr>
+		{0}
+	</table>
 '@ -f $table
 
 $body += @'
-</body>
-</html>
+	</body>
+	</html>
 '@
 
-Send-MailMessage -from $smtp_from -to $smtp_to -Encoding UTF8 -subject "Running DB backup tests" -bodyashtml -body $body -smtpServer $smtp_server -Credential $smtp_creds
+Send-MailMessage -from $g_config.smtp_from -to $g_config.smtp_to -Encoding UTF8 -subject "Running DB backup tests" -bodyashtml -body $body -smtpServer $g_config.smtp_server -Credential $smtp_creds
 
 
 Log-Screen "info" "--- Start testing procedure ---"
@@ -294,13 +331,57 @@ $body += @'
 <tr><th>Client</th><th>Policy</th><th>Schedule</th><th>DB</th><th>Backup Date</th><th>Media</th><th>Restore Time</th><th>Result</th></tr>
 '@
 
-# Reset statuses remaining from the previous launch
-
-$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x51) WHERE `flags` & 0x51'
-ExecuteNonQueryFailover -cmd $cmd
-
-foreach($row in $dataTable.Rows)
+if(!$skipImagesSelection)
 {
+	# Reset statuses remaining from the previous launch
+
+	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x51) WHERE `flags` & 0x51'
+	ExecuteNonQueryFailover -cmd $cmd
+
+	# Mark backup image as "WAIT FOR TEST"
+
+	foreach($row in $dataTable.Rows)
+	{
+		$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` | 0x01) WHERE `id` = {0} LIMIT 1' -f $row.id
+		ExecuteNonQueryFailover -cmd $cmd
+	}
+}
+
+while($true)
+{
+	$cmd.CommandText = @'
+		SELECT
+			m.`id`,
+			m.`client_name`,
+			m.`media_list`,
+			m.`client_name`,
+			m.`policy_name`,
+			m.`sched_label`,
+			m.`db`,
+			DATE_FORMAT(FROM_UNIXTIME(m.`backup_time`), "%d.%m.%Y") AS `backup_date`,
+			m.`nbimage`,
+			m.`mdfs`,
+			m.`logs`,
+			m.`stripes`,
+			m.`flags`
+		FROM
+			nbt_images AS m
+		WHERE
+			m.`flags` & 0x01
+		ORDER BY
+			m.`media_list`, m.`backup_time`
+		LIMIT 1
+'@
+
+	$dataTable = New-Object System.Data.DataTable
+	(New-Object system.Data.odbc.odbcDataAdapter($cmd)).fill($dataTable) | Out-Null
+	if($dataTable.Rows.Count -lt 1)
+	{
+		break
+	}
+
+	$row = $dataTable.Rows[0]
+
 	$body += '<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td>' -f $row.client_name, $row.policy_name, $row.sched_label, $row.db, $row.backup_date, $row.media_list
 
 	Log-Screen "pass" ("DB: " + $row.db +", Image: " + $row.nbimage)
@@ -308,14 +389,14 @@ foreach($row in $dataTable.Rows)
 	Log-Screen "info" ("  MDF: " + $row.mdfs + ", LOGS: " + $row.logs + ", Stripes: " + $row.stripes)
 
 	# mark backup image as "RESTORE IN PROGRESS"
-	
-	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE `id` = {0}' -f $row.id
+
+	$cmd.CommandText = 'UPDATE nbt_images SET `flags` = (`flags` & ~0x01) | 0x10 WHERE `id` = {0} LIMIT 1' -f $row.id
 	ExecuteNonQueryFailover -cmd $cmd
 
 	# create move script
-	
+
 	$mdfs = $row.mdfs -split ","
-	
+
 	$mdf = ''
 	$i = 0
 	foreach($m_name in $mdfs)
@@ -325,7 +406,7 @@ foreach($row in $dataTable.Rows)
 	}
 
 	$logs = $row.logs -split ","
-	
+
 	$log = ''
 	$i = 0
 	foreach($l_name in $logs)
@@ -336,10 +417,10 @@ foreach($row in $dataTable.Rows)
 
 	$bch = $bch_template -f $mdf, $log, $row.nbimage, $row.stripes, $row.client_name, $g_config.restore_server, $g_config.backup_server
 	Set-Content -Path "c:\_temp\restore.bch" -Value $bch
-	
+
 	Log-Only "info" "  Restoring DB..."
 	Write-Host -NoNewline "  Restoring DB..."
-	
+
 	$start = Get-Date
 
 	#& 'start /wait C:\Program Files\Veritas\NetBackup\bin\dbbackex.exe' -f c:\_temp\restore.bch -u sa -pw B2FSQkvYrPuVeZdj -np
@@ -369,7 +450,7 @@ foreach($row in $dataTable.Rows)
 		Write-Host -NoNewline "  Checking DB..."
 
 		$status = 0
-		
+
 		if($row.db -ne 'master')
 		{
 			try
