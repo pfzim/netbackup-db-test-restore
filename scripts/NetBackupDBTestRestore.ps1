@@ -266,7 +266,8 @@ else
 		FROM
 			nbt_images AS m
 		WHERE
-			m.`flags` & 0x01
+			m.`flags` & 0x21 = 0x01
+			AND FROM_UNIXTIME(m.`expiration`) > NOW()
 		ORDER BY
 			m.`media_list`, m.`backup_time`
 		LIMIT 1
