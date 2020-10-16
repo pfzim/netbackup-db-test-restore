@@ -2,6 +2,13 @@
 
 Scripts for automated testing MS SQL database backups
 
+## Requirements
+
+- MariaDB (MySQL) and ODBC driver
+- NetBackup server for Windows
+- Test server with MS SQL
+- Web Server with PHP for UI (optional)
+
 ## Installation
 
 - Create DB and tables: `database.sql`
