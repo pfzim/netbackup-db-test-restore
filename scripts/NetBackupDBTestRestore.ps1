@@ -38,13 +38,13 @@ $smtp_creds = New-Object System.Management.Automation.PSCredential ($g_config.sm
 
 $mdf_template = @'
 MOVE  "{0}"
-TO  "F:\Workdata\NB_Test_Restore_{1}.mdf"
+TO  "{2}NB_Test_Restore_{1}.mdf"
 
 '@
 
 $log_template = @'
 MOVE  "{0}"
-TO  "F:\Workdata\NB_Test_Restore_log_{1}.ldf"
+TO  "{2}NB_Test_Restore_log_{1}.ldf"
 
 '@
 
@@ -402,7 +402,7 @@ while($true)
 	$i = 0
 	foreach($m_name in $mdfs)
 	{
-		$mdf += $mdf_template -f $m_name, $i
+		$mdf += $mdf_template -f $m_name, $i, $g_config.restore_path
 		$i++
 	}
 
@@ -412,20 +412,20 @@ while($true)
 	$i = 0
 	foreach($l_name in $logs)
 	{
-		$log += $log_template -f $l_name, $i
+		$log += $log_template -f $l_name, $i, $g_config.restore_path
 		$i++
 	}
 
 	$bch = $bch_template -f $mdf, $log, $row.nbimage, $row.stripes, $row.client_name, $g_config.restore_server, $g_config.backup_server
-	Set-Content -Path "c:\_temp\restore.bch" -Value $bch
+	Set-Content -Path ('{0}restore.bch' -f $g_config.temp_path) -Value $bch
 
 	Log-Only "info" "  Restoring DB..."
 	Write-Host -NoNewline "  Restoring DB..."
 
 	$start = Get-Date
 
-	#& 'start /wait C:\Program Files\Veritas\NetBackup\bin\dbbackex.exe' -f c:\_temp\restore.bch -u sa -pw B2FSQkvYrPuVeZdj -np
-	$proc = Start-Process -FilePath 'C:\Program Files\Veritas\NetBackup\bin\dbbackex.exe' -ArgumentList '-f c:\_temp\restore.bch -u sa -pw B2FSQkvYrPuVeZdj -np' -PassThru
+	#& 'start /wait C:\Program Files\Veritas\NetBackup\bin\dbbackex.exe' -f c:\_temp\restore.bch -u sa -pw passwd -np
+	$proc = Start-Process -FilePath 'C:\Program Files\Veritas\NetBackup\bin\dbbackex.exe' -ArgumentList ('-f {0}restore.bch -u {1} -pw {2} -np' -f $g_config.temp_path, $g_config.mssql_login, $g_config.mssql_passwd) -PassThru
 	Wait-Process -InputObject $proc #-Timeout 99999
 	$stop = Get-Date
 	$duration = (New-TimeSpan –Start $start –End $stop)

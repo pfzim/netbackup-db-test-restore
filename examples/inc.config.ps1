@@ -10,4 +10,8 @@ $g_config = @{
 	smtp_server = 'smtp.contoso.com';
 	restore_server = 'SRV-NBTEST-01';
 	backup_server = 'srv-nb-01.contoso.com';
+	mssql_login = 'sa';
+	mssql_passwd = 'Passw0rd';
+	restore_path = 'F:\WorkData\';
+	temp_path = 'C:\_temp\';
 }
